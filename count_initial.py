@@ -6,7 +6,7 @@ def gen_alloc3(n):
         for j in range(n-i+1):
             yield (i, j, n-i-j)
 
-def add3(tr1, tr2):
+def add(tr1, tr2):
     return tuple([i+j for i,j in zip(tr1, tr2)])
 
 def calc_init(card_rep):
@@ -16,7 +16,7 @@ def calc_init(card_rep):
         A[i] = dict()
         for alloc_vec in gen_alloc3(card_rep[i]):
             for k, v in A[i-1].items():
-                new_alloc_vec = add3(k, alloc_vec) 
+                new_alloc_vec = add(k, alloc_vec) 
                 A[i][new_alloc_vec] = v + (
                     A[i][new_alloc_vec] if new_alloc_vec in A[i].keys() else 0)
     return A
