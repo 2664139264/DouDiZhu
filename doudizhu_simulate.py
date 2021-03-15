@@ -127,6 +127,7 @@ def gen_comb_above(base_card=None, useable_card):
     if not base_card:
         # 尝试所有的可能出牌种类（单、对、三、炸、带、连）
         for k, v in card_type.items():
+            # 枚举该出牌类型下的所有可能出牌方式
             for comb in gen_combs_of[v](useable_card=useable_card):
                 yield comb, card_type[k]
     else:

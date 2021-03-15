@@ -69,9 +69,10 @@ def gen_seq_123(n):
 
 g = gen_seq_123(3)
 
-for i in g(useable_card=[2,1,0,3,4,
+for i in g(useable_card=[2,1,1,3,4,
                          3,2,2,1,2,
                          3,3,2,1,0], base_card=[0,0,3,3,0,
                                                 0,0,0,0,0,
                                                 0,0,0,0,0]):
+    print(i)
     print(i)
