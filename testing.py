@@ -76,3 +76,4 @@ for i in g(useable_card=[2,1,1,3,4,
                                                 0,0,0,0,0]):
     print(i)
     print(i)
+    print(i)
