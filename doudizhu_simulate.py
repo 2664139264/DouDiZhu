@@ -32,6 +32,25 @@ gen_combs_of = (
 def minus(base, comb):
     return [i-j for i,j in zip(base, comb)]
 
+# base去掉comb中含有的牌，并且防止产生所带的牌和飞机连续
+def minus_all(base, comb):
+    # 三头（含）
+    s = comb.index(3)
+    # 三尾（不含）
+    e = 15 - comb[::-1].index(3)
+    # 除去comb中含有的牌，防止出现炸弹
+    new_base = base[:s]+[0]*(e-s)+base[e:]
+    # 除去comb中含有的炸弹，防止出现炸弹
+    new_base = [i if i < 4 else i-1 for i in new_base]
+    # 如果被带的牌中可能在三连之前且与三连构成更大的飞机
+    # 例如 444355536663 => 333444555666，应当禁止
+    if s > 0 and new_base[i-1] > 2:
+        new_base[i-1] = 2
+    # 如果在三连之后可能构成更大的飞机
+    if s < 11 and new_base[i+1] > 2:
+        new_base[i+1] = 2
+    return new_base
+
 # 牌组加法
 def add(comb1, comb2):
     return [i+j for i,j in zip(comb1, comb2)]
@@ -113,13 +132,16 @@ def gen_seq_123(n):
 # 生成三带所用单牌
 def gen_singles(n, useable_card, s=0, record=[0]*15):
     if n == 0:
-        yield record
+        # 所带的牌中不能有火箭
+        if record[13]==0 or record[14]==0:
+            yield record
         return
+    # 如果选牌选到了最后一张，还没有选够
     if s == 15 or sum(useable_card[s:]) < n:
         return
     # s处可用的单牌数
     useable = min(useable_card[s], n)
-    for i in range(1, useable+1):
+    for i in range(0, useable+1):
         yield from gen_singles(n-i, useable_card, s+1, record[:s]+[i]+record[s+1:])
     
 # 生成三带所用对牌
@@ -127,11 +149,11 @@ def gen_pairs(n, useable_card, s=0, record=[0]*15):
     if n == 0:
         yield record
         return
-    if s == 15 or sum(useable_card[s:]) < n*2:
+    if s == 13 or sum(useable_card[s:]) < n*2:
         return
     # s处可用的对牌数
     useable = min(useable_card[s]//2, n)
-    for i in range(1, useable+1):
+    for i in range(0, useable+1):
         yield from gen_pairs(n-i, useable_card, s+1, record[:s]+[2*i]+record[s+1:])
     
 # 生成（连1-5）三带一、对
@@ -150,20 +172,11 @@ def gen_tri_12345_with_12(n, m):
                 return
             # 生成三张牌
             for tri in gen_1234(3)(useable_card=useable_card):
-                left = minus(useable_card, tri)
+                left = minus_all(useable_card, tri)
                 for w in {1:gen_singles, 2:gen_pairs}[l](k, useable_card=left):
                     yield add(tri, w)
         # 如果是连三带单、对
-        # 这里会有歧义性：
-        # 比如333444555666 
-        # 可以理解为3336 4446 5556
-        # 也可以理解为 4443 5553 6663 （默认取大的）
         tri_e = base_card.index(3)
-        # 寻找结束的4
-        try:
-            tri_e = max(tri_e, base_card.index(4))
-        except:
-            pass
         
     
     return gen_tri_n_with_m
