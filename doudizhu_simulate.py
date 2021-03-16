@@ -17,15 +17,15 @@ card_type = {
     '4+1+1':35, '4+2+2':36, # 四带+2单/2对
 }
 gen_combs_of = (
-    [gen_1234(i) for i in range(1, 5)] # 单牌、对牌、三张、四张
+    [gen_1234(i) for i in range(1, 5)] # 单牌、对牌、三张、炸弹
     + [gen_rocket] # 火箭
     + [gen_seq_123(1)]*8 # 连单
     + [gen_seq_123(2)]*8 # 连对
     + [gen_seq_123(3)]*5 # 连三
     + [gen_tri_12345_with_12(i, j) for i in range(1, 5) for j in range(1, 3)] # 连三带单、对
     + [gen_tri_12345_with_12(5, 1)] # 连5个三带单
-    + [gen_quad_with_1_1] # 四带两单
-    + [gen_quad_with_2_2] # 四带两对
+    + [gen_quad_with(1)] # 四带两单
+    + [gen_quad_with(2)] # 四带两对
 )
 
 # 牌组减法
@@ -38,17 +38,17 @@ def minus_all(base, comb):
     s = comb.index(3)
     # 三尾（不含）
     e = 15 - comb[::-1].index(3)
-    # 除去comb中含有的牌，防止出现炸弹
+    # 除去base中含有comb的牌，防止出现炸弹
     new_base = base[:s]+[0]*(e-s)+base[e:]
-    # 除去comb中含有的炸弹，防止出现炸弹
-    new_base = [i if i < 4 else i-1 for i in new_base]
+    # 除去base中含有的炸弹，防止出现炸弹
+    new_base = [i if i < 4 else 3 for i in new_base]
     # 如果被带的牌中可能在三连之前且与三连构成更大的飞机
     # 例如 444355536663 => 333444555666，应当禁止
-    if s > 0 and new_base[i-1] > 2:
-        new_base[i-1] = 2
-    # 如果在三连之后可能构成更大的飞机
-    if s < 11 and new_base[i+1] > 2:
-        new_base[i+1] = 2
+    if s > 0 and new_base[s-1] > 2:
+        new_base[s-1] = 2
+    # 如果在三连之后可能构成更大的飞机(e不含)，不允许，最多允许用两张该牌
+    if e < 12 and new_base[e] > 2:
+        new_base[e] = 2
     return new_base
 
 # 牌组加法
@@ -158,28 +158,35 @@ def gen_pairs(n, useable_card, s=0, record=[0]*15):
     
 # 生成（连1-5）三带一、对
 def gen_tri_12345_with_12(n, m):
-    def gen_tri_n_with_m(useable_card, k=n, l=m, base_card=None):
-        # 本家可用的牌
-        sum_useable_card = sum(useable_card)
-        # 上家出待压制的牌
-        sum_base_card = sum(base_card)
+    def gen_tri_k_with_l(useable_card, k=n, l=m, base_card=None):
         # 如果牌不够，没法出
-        if base_card and sum_useable_card < sum_base_card:
+        if sum(useable_card) < n*(3+l):
             return
-        # 如果是三带单、对
-        if k == 1:
-            if sum(useable_card) < 3*k+l:
-                return
-            # 生成三张牌
-            for tri in gen_1234(3)(useable_card=useable_card):
-                left = minus_all(useable_card, tri)
-                for w in {1:gen_singles, 2:gen_pairs}[l](k, useable_card=left):
-                    yield add(tri, w)
-        # 如果是连三带单、对
-        tri_e = base_card.index(3)
-        
-    
-    return gen_tri_n_with_m
+        # 需要压制的牌从哪开始三带
+        base_s = -1 if not base_card else base_card.index(3)
+        # 生成三连，可用的牌必须起点比需要压制的牌高
+        for tri in (gen_1234 if k==1 else gen_seq_123)(3)(
+            useable_card=[0]*base_s+useable_card[base_s+1:]):
+            # 可用于带的牌
+            left = minus_all(useable_card, tri)
+            # 生成带的牌组
+            for w in {1:gen_singles, 2:gen_pairs}[l](k, useable_card=left):
+                yield add(tri, w)
+    return gen_tri_k_with_l
+
+# 生成四带两单、两对
+def gen_quad_with(n):
+    def gen_quad_with_k(useable_card, k=n, base_card=None):
+        # 如果牌不够，生成不了
+        if sum(useable_card) < 4+2*n:
+            return
+        base_s = -1 if not base_card else base_card.index(4)
+        for quad in gen_1234(4)(
+            useable_card=[0]*base_s+useable_card[base_s+1:]):
+            left = minus_all(useable_card, quad)
+            for w in {1:gen_singles, 2:gen_pairs}[2](k, useable_card=left):
+                yield add(tri, w)
+    return gen_quad_with_k
 
 
 initial_state = {

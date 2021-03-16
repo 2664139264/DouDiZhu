@@ -24,7 +24,6 @@ for i in f(useable_card=[2,3,4,2,3,
                                                 1,0,0,0,0,
                                                 0,0,0,0,0]):
     print(i)
-'''
 def gen_seq_123(n):
     def gen_seq_k(useable_card, k=n, base_card=None):
         # 如果是开牌
@@ -66,14 +65,41 @@ def gen_seq_123(n):
             else:
                 yield [0]*(card_s+i+1) + [k]*(card_e-card_s+1) + [0]*(13-card_e-i)
     return gen_seq_k
-
 g = gen_seq_123(3)
-
 for i in g(useable_card=[2,1,1,3,4,
                          3,2,2,1,2,
                          3,3,2,1,0], base_card=[0,0,3,3,0,
                                                 0,0,0,0,0,
                                                 0,0,0,0,0]):
     print(i)
-    print(i)
-    print(i)
+def gen_singles(n, useable_card, s=0, record=[0]*15):
+    if n == 0:
+        # 所带的牌中不能有火箭
+        if record[13]==0 or record[14]==0:
+            yield record
+        return
+    # 如果选牌选到了最后一张，还没有选够
+    if s == 15 or sum(useable_card[s:]) < n:
+        return
+    # s处可用的单牌数
+    useable = min(useable_card[s], n)
+    for i in range(0, useable+1):
+        yield from gen_singles(n-i, useable_card, s+1, record[:s]+[i]+record[s+1:])  
+# 生成三带所用对牌
+def gen_pairs(n, useable_card, s=0, record=[0]*15):
+    if n == 0:
+        yield record
+        return
+    if s == 13 or sum(useable_card[s:]) < n*2:
+        return
+    # s处可用的对牌数
+    useable = min(useable_card[s]//2, n)
+    for i in range(0, useable+1):
+        yield from gen_pairs(n-i, useable_card, s+1, record[:s]+[2*i]+record[s+1:])
+
+for s in gen_pairs(3, 
+    useable_card=[0,2,0,2,2,
+                  1,2,3,0,2,
+                  0,2,1,1,1]):
+    print(s)
+'''
